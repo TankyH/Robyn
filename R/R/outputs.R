@@ -228,12 +228,15 @@ robyn_outputs <- function(InputCollect, OutputModels,
             ))
           }
           select_model <- if (!clusters || is.null(OutputCollect[["clusters"]])) NULL else select_model
+
+          message("000 - robyn_onepagers START")
           pareto_onepagers <- robyn_onepagers(
             InputCollect, OutputCollect,
             select_model = select_model,
             quiet = quiet, export = export, ...
           )
         }
+        message("000 - robyn_onepagers END")
 
         if (all_sol_json) {
           pareto_df <- OutputCollect$resultHypParam %>%
@@ -246,12 +249,14 @@ robyn_outputs <- function(InputCollect, OutputModels,
         attr(OutputCollect, "runTime") <- round(
           difftime(Sys.time(), t0, units = "mins"), 2
         )
+        message("000 - robyn_write START")
         robyn_write(
           InputCollect = InputCollect,
           OutputCollect = OutputCollect,
           dir = plot_folder, quiet = quiet,
           pareto_df = pareto_df, ...
         )
+        message("000 - robyn_write END")
 
         # For internal use -> UI Code
         if (ui && plot_pareto) OutputCollect$UI$pareto_onepagers <- pareto_onepagers
@@ -262,10 +267,13 @@ robyn_outputs <- function(InputCollect, OutputModels,
       }
     )
   }
+  message("000 - 00000000000 END")
 
   if (!is.null(OutputModels$hyper_updated)) OutputCollect$hyper_updated <- OutputModels$hyper_updated
   attr(OutputCollect, "runTime") <- round(difftime(Sys.time(), t0, units = "mins"), 2)
+  message("000 - robyn_outputs START")
   class(OutputCollect) <- c("robyn_outputs", class(OutputCollect))
+  message("000 - robyn_outputs END")
   return(invisible(OutputCollect))
 }
 

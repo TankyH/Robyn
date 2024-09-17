@@ -255,6 +255,7 @@ robyn_onepagers <- function(
     select_model = NULL, quiet = FALSE,
     export = TRUE, plot_folder = OutputCollect$plot_folder,
     baseline_level = 0, ...) {
+  message("000 - start onepagers")
   check_class("robyn_outputs", OutputCollect)
   if (TRUE) {
     window <- c(InputCollect$window_start, InputCollect$window_end)
@@ -296,6 +297,7 @@ robyn_onepagers <- function(
   all_fronts <- sort(all_fronts[!is.na(all_fronts)])
   if (!all(pareto_fronts_vec %in% all_fronts)) pareto_fronts_vec <- all_fronts
 
+  message("000 - selected models on")
   if (check_parallel_plot()) {
     if (!quiet & nrow(resultHypParam) > 1) {
       message(paste(">> Plotting", count_mod_out, "selected models on", OutputCollect$cores, "cores..."))
@@ -305,7 +307,7 @@ robyn_onepagers <- function(
       message(paste(">> Plotting", count_mod_out, "selected models on 1 core (MacOS fallback)..."))
     }
   }
-
+  message("000 - 01")
   if (!quiet && count_mod_out > 1) {
     pbplot <- txtProgressBar(min = 0, max = count_mod_out, style = 3)
   }
@@ -313,6 +315,7 @@ robyn_onepagers <- function(
   all_plots <- list()
   cnt <- 0
 
+  message("000 - 02")
   for (pf in pareto_fronts_vec) { # pf = pareto_fronts_vec[1]
 
     plotMediaShare <- filter(
@@ -321,10 +324,14 @@ robyn_onepagers <- function(
     )
     uniqueSol <- unique(plotMediaShare$solID)
 
+    message("000 - 03")
+
     # parallelResult <- for (sid in uniqueSol) { # sid = uniqueSol[1]
     parallelResult <- foreach(sid = uniqueSol, .options.RNG = OutputCollect$seed) %dorng% { # sid = uniqueSol[1]
 
+      message("000 - 04")
       if (TRUE) {
+        message("000 - 05")
         plotMediaShareLoop <- plotMediaShare[plotMediaShare$solID == sid, ]
         rsq_train_plot <- round(plotMediaShareLoop$rsq_train[1], 4)
         rsq_val_plot <- round(plotMediaShareLoop$rsq_val[1], 4)
@@ -348,7 +355,9 @@ robyn_onepagers <- function(
           )) %>%
           pull(.data$performance) %>%
           signif(., 3)
+        message("000 - 06")
         if (val) {
+          message("000 - 07")
           errors <- sprintf(
             paste(
               "Adj.R2: train = %s, val = %s, test = %s |",
@@ -360,6 +369,7 @@ robyn_onepagers <- function(
             decomp_rssd_plot, mape_lift_plot
           )
         } else {
+          message("000 - 08")
           errors <- sprintf(
             "Adj.R2: train = %s | NRMSE: train = %s | DECOMP.RSSD = %s | MAPE = %s",
             rsq_train_plot, nrmse_train_plot, decomp_rssd_plot, mape_lift_plot
@@ -374,6 +384,7 @@ robyn_onepagers <- function(
       plotMediaShareLoopBar$variable <- stringr::str_to_title(gsub("_", " ", plotMediaShareLoopBar$variable))
       plotMediaShareLoopLine$type_colour <- type_colour <- "#03396C"
       names(type_colour) <- "type_colour"
+      message("000 - 09")
       p1 <- ggplot(plotMediaShareLoopBar, aes(x = .data$rn, y = .data$value, fill = .data$variable)) +
         geom_bar(stat = "identity", width = 0.5, position = "dodge") +
         geom_text(aes(y = 0, label = paste0(round(.data$value * 100, 1), "%")),
@@ -408,6 +419,7 @@ robyn_onepagers <- function(
         )
 
       ## 2. Waterfall
+      message("000 - 10")
       plotWaterfallLoop <- temp[[sid]]$plot2data$plotWaterfallLoop %>%
         mutate(rn = ifelse(
           .data$rn %in% bvars, paste0("Baseline_L", baseline_level), as.character(.data$rn)
@@ -451,6 +463,7 @@ robyn_onepagers <- function(
         )
 
       ## 3. Adstock rate
+      message("000 - 11")
       if (InputCollect$adstock == "geometric") {
         dt_geometric <- temp[[sid]]$plot3data$dt_geometric
         p3 <- ggplot(dt_geometric, aes(x = .data$channels, y = .data$thetas, fill = "coral")) +
@@ -482,6 +495,7 @@ robyn_onepagers <- function(
       }
 
       ## 4. Response curves
+      message("000 - 12")
       dt_scurvePlot <- temp[[sid]]$plot4data$dt_scurvePlot
       dt_scurvePlotMean <- temp[[sid]]$plot4data$dt_scurvePlotMean
       trim_rate <- 1.3 # maybe enable as a parameter
@@ -532,6 +546,7 @@ robyn_onepagers <- function(
         scale_x_abbr()
 
       ## 5. Fitted vs actual
+      message("000 - 13")
       xDecompVecPlotMelted <- temp[[sid]]$plot5data$xDecompVecPlotMelted %>%
         mutate(
           linetype = ifelse(.data$variable == "predicted", "solid", "dotted"),
@@ -580,6 +595,7 @@ robyn_onepagers <- function(
       }
 
       ## 6. Diagnostic: fitted vs residual
+      message("000 - 14")
       xDecompVecPlot <- temp[[sid]]$plot6data$xDecompVecPlot
       p6 <- qplot(x = .data$predicted, y = .data$actual - .data$predicted, data = xDecompVecPlot) +
         geom_hline(yintercept = 0) +
@@ -589,6 +605,7 @@ robyn_onepagers <- function(
         labs(x = "Fitted", y = "Residual", title = "Fitted vs. Residual")
 
       ## 7. Immediate vs carryover
+      message("000 - 15")
       df_imme_caov <- temp[[sid]]$plot7data
       p7 <- df_imme_caov %>%
         mutate(type = factor(.data$type, levels = c("Immediate", "Carryover"))) %>%
@@ -607,6 +624,7 @@ robyn_onepagers <- function(
         )
 
       ## 8. Bootstrapped ROI/CPA with CIs
+      message("000 - 16")
       if ("ci_low" %in% colnames(xDecompAgg)) {
         cluster_txt <- ""
         if ("clusters" %in% names(OutputCollect)) {
@@ -636,6 +654,7 @@ robyn_onepagers <- function(
       }
 
       ## Aggregate one-pager plots and export
+      message("000 - 17")
       ver <- as.character(utils::packageVersion("Robyn"))
       rver <- utils::sessionInfo()$R.version
       onepagerTitle <- sprintf("One-pager for Model ID: %s", sid)
@@ -680,9 +699,11 @@ robyn_onepagers <- function(
       setTxtProgressBar(pbplot, cnt)
     }
   }
+  message("000 - 18")
   if (!quiet && count_mod_out > 1) close(pbplot)
   # Stop cluster to avoid memory leaks
   if (OutputCollect$cores > 1) stopImplicitCluster()
+  message("000 - 19")
   return(invisible(parallelResult[[1]]))
 }
 
